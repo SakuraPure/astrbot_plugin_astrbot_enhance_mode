@@ -133,6 +133,21 @@ class Main(star.Star):
             return ""
         return str(matched.group(1) or "").strip()
 
+    def _find_history_line_by_message_id(
+        self, origin: str, message_id: str | int | None
+    ) -> str:
+        msg_id = str(message_id or "").strip()
+        if not msg_id:
+            return ""
+        marker = f"#msg{msg_id}:"
+        chats = self.runtime.session_chats.get(origin)
+        if not chats:
+            return ""
+        for line in reversed(chats):
+            if marker in line:
+                return line
+        return ""
+
     @staticmethod
     def _replace_image_marker_at_index(
         line: str, image_index: int, caption: str
@@ -1671,6 +1686,7 @@ class Main(star.Star):
             header = f"[{nickname}/{datetime_str}] #msg{msg_id}:"
 
         parts = [header]
+        self_id = str(event.get_self_id() or "").strip()
         for comp in event.get_messages():
             if isinstance(comp, Reply):
                 quote_nick = comp.sender_nickname or "Unknown"
@@ -1687,7 +1703,14 @@ class Main(star.Star):
                 image_urls.append(image_url)
                 parts.append(" [Image]")
             elif isinstance(comp, At):
-                parts.append(f" [At: {comp.name}]")
+                at_id = str(getattr(comp, "qq", "") or "").strip()
+                at_name = str(comp.name or "").strip()
+                if at_id and at_id == self_id:
+                    parts.append(" [At: You]")
+                elif at_name and at_id:
+                    parts.append(f" [At: {at_name}/{at_id}]")
+                else:
+                    parts.append(f" [At: {at_name or at_id}]")
 
         final_message = "".join(parts)
         logger.debug(f"enhance-mode | {event.unified_msg_origin} | {final_message}")
@@ -1762,24 +1785,31 @@ class Main(star.Star):
             is_active_triggered = event.get_extra(
                 "_enhance_active_reply_triggered", False
             )
-            active_mode = event.get_extra("_enhance_active_reply_mode", "")
-            if is_active_triggered and active_mode == "model_choice":
+            if is_active_triggered:
                 req.prompt = (
                     f"You are now in a chatroom. The chat history is as follows:\n{bounded_chats}\n\n"
                     "You decided to actively join this conversation because some recent messages are worth replying to.\n"
                     "Choose the message(s) you want to respond to from the chat history above, "
                     "and compose a natural reply. Quote the message you choose in most cases.\n"
+                    "Keep in mind that messages between other members may not need your input at all; "
+                    "if, on a second look, none of them does, output `<refuse/>`.\n"
                     "Only output your response and do not output any other information. "
                     "You MUST use the SAME language as the chatroom is using."
                     f"{interaction_instructions}"
                 )
             else:
-                prompt = req.prompt
+                incoming = self._find_history_line_by_message_id(
+                    event.unified_msg_origin,
+                    event.message_obj.message_id,
+                ) or str(req.prompt or "")
                 req.prompt = (
                     f"You are now in a chatroom. The chat history is as follows:\n{bounded_chats}\n\n"
-                    f"Now, a new message is coming: `{prompt}`. "
-                    "Please react to it. Your entire output is your reply to this message. "
-                    "Quote the message which is coming in most cases. "
+                    f"Now, a new message arrives:\n{incoming}\n\n"
+                    "This message is not necessarily addressed to you. "
+                    "Judge from its At targets (`[At: You]` means you), quote and the conversation flow "
+                    "who it is for, then decide whether and how to respond. "
+                    "Your entire output is your reply. "
+                    "Quote the message you respond to when it helps clarity. "
                     "Only output your response and do not output any other information. "
                     "You MUST use the SAME language as the chatroom is using."
                     f"{interaction_instructions}"

@@ -113,6 +113,17 @@ def build_interaction_instructions(
         "Important: quote tag is NOT a container tag. Do NOT output </quote>."
     )
     instructions += (
+        "\n\n## Addressee\n"
+        "Messages in a group chat are NOT necessarily addressed to you. "
+        "Before replying, judge from At targets, quotes and the conversation flow "
+        "who each message is for.\n"
+        "`[At: You]` in a history message means that message explicitly mentions you. "
+        "`[At: nickname/user_id]` means it mentions someone else.\n"
+        "If a message is clearly part of a conversation between other members "
+        "and your input adds nothing, do not treat it as addressed to you; "
+        "prefer `<refuse/>` over forcing a reply."
+    )
+    instructions += (
         "\n\n## Refuse\n"
         "If you decide not to reply, output exactly `<refuse/>` as the entire response.\n"
         "The first characters MUST be `<refuse/>`, with no extra text before or after.\n"
