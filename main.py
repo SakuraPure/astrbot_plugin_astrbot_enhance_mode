@@ -1785,31 +1785,48 @@ class Main(star.Star):
             is_active_triggered = event.get_extra(
                 "_enhance_active_reply_triggered", False
             )
-            if is_active_triggered:
+            active_mode = event.get_extra("_enhance_active_reply_mode", "")
+            incoming = self._find_history_line_by_message_id(
+                event.unified_msg_origin,
+                event.message_obj.message_id,
+            ) or str(req.prompt or "")
+            if is_active_triggered and active_mode == "model_choice":
                 req.prompt = (
                     f"You are now in a chatroom. The chat history is as follows:\n{bounded_chats}\n\n"
                     "You decided to actively join this conversation because some recent messages are worth replying to.\n"
                     "Choose the message(s) you want to respond to from the chat history above, "
-                    "and compose a natural reply. Quote the message you choose in most cases.\n"
-                    "Keep in mind that messages between other members may not need your input at all; "
-                    "if, on a second look, none of them does, output `<refuse/>`.\n"
+                    "and compose a natural reply as a fellow group member. "
+                    "Quote the message you choose in most cases.\n"
+                    "Do not re-reply to messages you (shown as [You/...]) already responded to.\n"
+                    "Only output your response and do not output any other information. "
+                    "You MUST use the SAME language as the chatroom is using."
+                    f"{interaction_instructions}"
+                )
+            elif is_active_triggered:
+                req.prompt = (
+                    f"You are now in a chatroom. The chat history is as follows:\n{bounded_chats}\n\n"
+                    f"The latest message just arrived:\n{incoming}\n\n"
+                    "You are chiming in as a regular member of this chatroom. "
+                    "The message may be addressed to someone else - read its At targets "
+                    "(`[At: You]` means you), quote and the conversation flow to understand "
+                    "who is talking to whom, then join in naturally: react, comment, banter, "
+                    "or add your own view, the way a fellow member would.\n"
+                    "If the message asks another member to do something, respond as a bystander "
+                    "instead of answering the request as if it were aimed at you.\n"
+                    "Do not repeat points you (shown as [You/...]) already made.\n"
+                    "Your entire output is your reply. Quote the message you respond to in most cases. "
                     "Only output your response and do not output any other information. "
                     "You MUST use the SAME language as the chatroom is using."
                     f"{interaction_instructions}"
                 )
             else:
-                incoming = self._find_history_line_by_message_id(
-                    event.unified_msg_origin,
-                    event.message_obj.message_id,
-                ) or str(req.prompt or "")
                 req.prompt = (
                     f"You are now in a chatroom. The chat history is as follows:\n{bounded_chats}\n\n"
-                    f"Now, a new message arrives:\n{incoming}\n\n"
-                    "This message is not necessarily addressed to you. "
-                    "Judge from its At targets (`[At: You]` means you), quote and the conversation flow "
-                    "who it is for, then decide whether and how to respond. "
-                    "Your entire output is your reply. "
-                    "Quote the message you respond to when it helps clarity. "
+                    f"Now, a new message is coming:\n{incoming}\n\n"
+                    "This message triggered you directly (you were mentioned or woken), "
+                    "so it is most likely addressed to you. Please react to it. "
+                    "Your entire output is your reply to this message. "
+                    "Quote the message which is coming in most cases. "
                     "Only output your response and do not output any other information. "
                     "You MUST use the SAME language as the chatroom is using."
                     f"{interaction_instructions}"

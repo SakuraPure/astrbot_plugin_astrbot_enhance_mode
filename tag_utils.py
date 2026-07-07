@@ -114,14 +114,15 @@ def build_interaction_instructions(
     )
     instructions += (
         "\n\n## Addressee\n"
-        "Messages in a group chat are NOT necessarily addressed to you. "
-        "Before replying, judge from At targets, quotes and the conversation flow "
-        "who each message is for.\n"
+        "Messages in a group chat are not always addressed to you. "
+        "Read At targets, quotes and the conversation flow to understand "
+        "who is talking to whom.\n"
         "`[At: You]` in a history message means that message explicitly mentions you. "
         "`[At: nickname/user_id]` means it mentions someone else.\n"
-        "If a message is clearly part of a conversation between other members "
-        "and your input adds nothing, do not treat it as addressed to you; "
-        "prefer `<refuse/>` over forcing a reply."
+        "You are welcome to join conversations between other members, as any group "
+        "member would. Just shape your reply to the actual interaction: if a message "
+        "asks another member for something, comment on it as a bystander rather than "
+        "answering as if you were asked."
     )
     instructions += (
         "\n\n## Refuse\n"
